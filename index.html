@@ -1,0 +1,666 @@
+import React, { useState } from 'react';
+import { 
+  Leaf, 
+  Sun, 
+  Wind, 
+  Layers, 
+  TrendingUp, 
+  ShieldCheck, 
+  Microscope, 
+  Globe, 
+  AlertTriangle, 
+  CheckCircle,
+  Cpu,
+  Anchor,
+  MapPin,
+  MousePointerClick,
+  BookOpen,
+  Lightbulb,
+  FileText,
+  BarChart2,
+  Info,
+  Crosshair,
+  Truck,
+  Beaker,
+  Factory,
+  ArrowRight
+} from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell,
+  Legend,
+  LabelList,
+  LineChart,
+  Line
+} from 'recharts';
+
+// --- DADOS DO ESTUDO IPEA (TD 3133 - 2025) ---
+
+// Fonte: Gráfico 1 do PDF - Evolução empresas
+const evolucaoEmpresasData = [
+  { ano: '1991', empresas: 3 },
+  { ano: '2002', empresas: 5 },
+  { ano: '2010', empresas: 8 },
+  { ano: '2015', empresas: 43 },
+  { ano: '2018', empresas: 69 },
+  { ano: '2020', empresas: 88 },
+  { ano: '2022', empresas: 99 },
+  { ano: '2024', empresas: 136 },
+];
+
+// Fonte: Gráfico 7 do PDF - Startups
+const evolucaoStartupsData = [
+  { ano: '2019', startups: 71 },
+  { ano: '2020', startups: 78 },
+  { ano: '2021', startups: 78 },
+  { ano: '2022', startups: 89 },
+  { ano: '2023', startups: 118 },
+];
+
+// Fonte: Gráfico 2 do PDF - Tipos de produtos
+const tiposProdutosData = [
+  { name: 'Inseticidas', value: 313, color: '#059669', percent: '43%' }, 
+  { name: 'Fungicidas', value: 119, color: '#10B981', percent: '16%' },
+  { name: 'Ag. Biológicos', value: 94, color: '#34D399', percent: '13%' },
+  { name: 'Nematicidas', value: 89, color: '#6EE7B7', percent: '12%' },
+  { name: 'Acaricidas', value: 58, color: '#A7F3D0', percent: '8%' },
+  { name: 'Feromônios', value: 49, color: '#D1FAE5', percent: '7%' },
+];
+
+// Fonte: Figura 2 do PDF - Localização
+const concentracaoRegionalData = [
+  { estado: 'São Paulo (SP)', unidades: 190, region: 'Sudeste', percent: '47.1%' },
+  { estado: 'Paraná (PR)', unidades: 52, region: 'Sul', percent: '12.9%' },
+  { estado: 'Minas Gerais (MG)', unidades: 35, region: 'Sudeste', percent: '8.6%' },
+  { estado: 'Rio G. Sul (RS)', unidades: 31, region: 'Sul', percent: '7.6%' },
+  { estado: 'Santa Catarina (SC)', unidades: 22, region: 'Sul', percent: '5.4%' },
+  { estado: 'Mato Grosso (MT)', unidades: 20, region: 'Centro-Oeste', percent: '5.0%' },
+  { estado: 'Goiás (GO)', unidades: 6, region: 'Centro-Oeste', percent: '1.5%' },
+];
+
+// DADOS ESTRATÉGICOS GOIÁS (Paradoxo Logístico)
+// Fonte: Cruzamento de dados Ipea (Unidades) vs Croplife (Consumo)
+const paradoxoLogisticoData = [
+  { region: 'Sudeste (SP/MG)', producao: 57, consumo: 15, labelProd: '57% Fabrica', labelCons: '15% Usa' },
+  { region: 'C. Oeste (MT/GO)', producao: 8, consumo: 46, labelProd: '8% Fabrica', labelCons: '46% Usa' },
+];
+
+const biomasData = [
+  {
+    id: 'amazonia',
+    name: 'Amazônia',
+    title: 'Hub Global de Bioativos',
+    icon: <Leaf className="w-6 h-6" />,
+    description: 'A maior reserva de biodiversidade do planeta. Seus óleos e extratos (Açaí, Andiroba) são vitais para a indústria cosmética global.',
+    stats: { production: '1.9%', potential: 'Muito Alto' },
+    analysis: 'Apesar do potencial químico incalculável, a região possui apenas 8 fábricas. O desafio é converter a floresta em laboratório sem destruí-la (Bioeconomia 4.0).'
+  },
+  {
+    id: 'cerrado',
+    name: 'Cerrado & Pantanal',
+    title: 'A Farmácia do Brasil',
+    icon: <Sun className="w-6 h-6" />,
+    description: 'Onde o agronegócio acontece. A demanda por controle biológico de pragas em grandes culturas (Soja/Milho) é massiva aqui.',
+    stats: { production: '8.4%', potential: 'Crítico (Alta Demanda)' },
+    analysis: 'O "Paradoxo Logístico": A região que mais precisa de insumos biológicos (organismos vivos sensíveis ao calor) é a que mais depende de fretes longos vindos do Sudeste.'
+  },
+  {
+    id: 'sul_sudeste',
+    name: 'Sul & Sudeste',
+    title: 'Polo Tecnológico',
+    icon: <Layers className="w-6 h-6" />,
+    description: 'O berço industrial. SP e PR concentram universidades, capital de risco e infraestrutura instalada.',
+    stats: { production: '83%', potential: 'Saturado' },
+    analysis: 'A alta concentração gera competição predatória e risco de oligopólio. O crescimento aqui tende a ser por fusões e aquisições (M&A), não novas fábricas.'
+  }
+];
+
+const diferenciaisGoias = [
+  { 
+    id: 'pharma', 
+    title: 'O Diferencial Anápolis (DAIA)', 
+    icon: <Beaker className="w-6 h-6 text-blue-600" />,
+    desc: 'O 2º maior polo farmacêutico do Brasil está aqui. Isso significa que já existem "salas limpas", reatores de fermentação e mão de obra qualificada em biossegurança. Adaptar uma indústria farmacêutica para bioinsumos é mais rápido do que construir do zero.',
+    impact: 'Infraestrutura Pronta'
+  },
+  { 
+    id: 'logistics', 
+    title: 'Centralidade Logística', 
+    icon: <Truck className="w-6 h-6 text-emerald-600" />,
+    desc: 'Estar no centro geográfico permite distribuir para o Norte (novas fronteiras agrícolas), Nordeste (fruticultura) e Centro-Oeste com o menor custo médio de frete do país.',
+    impact: 'Eficiência de Custo'
+  },
+  { 
+    id: 'ecosystem', 
+    title: 'Ecossistema de Inovação', 
+    icon: <Cpu className="w-6 h-6 text-purple-600" />,
+    desc: 'A presença do CEBIO (Centro de Excelência em Bioinsumos) cria uma ponte direta entre a pesquisa acadêmica (UFG/UEG) e a aplicação no campo, resolvendo o gargalo de capacitação técnica.',
+    impact: 'P&D Aplicado'
+  }
+];
+
+// --- COMPONENTES AUXILIARES ---
+
+const SectionIntro = ({ title, text, icon: Icon }) => (
+  <div className="mb-6 bg-white border-l-4 border-emerald-500 p-6 rounded-r-xl shadow-sm animate-in slide-in-from-left duration-500">
+    <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-3">
+      {Icon && <Icon className="w-6 h-6 text-emerald-600" />}
+      {title}
+    </h3>
+    <p className="text-slate-600 text-base leading-relaxed max-w-5xl text-justify">{text}</p>
+  </div>
+);
+
+const ChartFooter = ({ source, period }) => (
+  <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400 border-t pt-3">
+    <div className="flex items-center gap-2">
+      <Info size={12} />
+      <span><strong>Fonte Primária:</strong> {source}</span>
+    </div>
+    {period && <span><strong>Período:</strong> {period}</span>}
+  </div>
+);
+
+const DidacticNote = ({ title, text, type = "info" }) => (
+  <div className={`p-4 rounded-lg border text-sm mt-4 flex gap-3 ${
+    type === "warning" 
+      ? "bg-amber-50 border-amber-200 text-amber-900" 
+      : "bg-blue-50 border-blue-200 text-blue-900"
+  }`}>
+    <div className="shrink-0 mt-0.5">
+      {type === "warning" ? <AlertTriangle size={18} /> : <Lightbulb size={18} />}
+    </div>
+    <div>
+      <strong className="block mb-1 font-bold uppercase text-xs tracking-wide opacity-80">
+        {title}
+      </strong>
+      <p className="leading-relaxed">{text}</p>
+    </div>
+  </div>
+);
+
+const StatCard = ({ label, value, subtext, trend }) => (
+  <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
+    <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">{label}</div>
+    <div className="text-3xl font-bold text-emerald-600 mb-2">{value}</div>
+    <div className="text-xs text-slate-500 border-t border-slate-100 pt-2 mt-2">{subtext}</div>
+    {trend && (
+      <div className="mt-2 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded w-fit inline-block">
+        {trend}
+      </div>
+    )}
+  </div>
+);
+
+const InteractiveHint = () => (
+  <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full w-fit mb-4 animate-pulse">
+    <MousePointerClick className="w-3 h-3" />
+    Interativo: Passe o mouse ou clique nos elementos
+  </div>
+);
+
+// --- APP PRINCIPAL ---
+
+export default function BioeconomyDashboardFinalLogo() {
+  const [activeTab, setActiveTab] = useState('evolution'); 
+  const [activeBiome, setActiveBiome] = useState(biomasData[0]);
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
+      
+      {/* HEADER */}
+      <header className="bg-slate-900 text-white pt-10 pb-24 px-6 relative overflow-hidden">
+        {/* Background Icon */}
+        <div className="absolute top-0 right-0 opacity-5 transform translate-x-10 -translate-y-10">
+          <Leaf size={300} />
+        </div>
+
+        {/* LOGOMARCA SOLICITADA */}
+        <img 
+          src="https://i.postimg.cc/SNGfkpnN/DET_-_branco.png" 
+          alt="Logo DET" 
+          className="absolute top-5 right-5 w-28 md:w-36 h-auto z-20 opacity-90 hover:opacity-100 transition-opacity object-contain"
+        />
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold tracking-wider">FORESIGHT ESTRATÉGICO 2035</span>
+            <span className="text-slate-400 text-sm flex items-center gap-1">
+              <FileText size={14}/> Baseado no TD 3133 (Ipea, 2025)
+            </span>
+          </div>
+          <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
+            O Futuro dos <span className="text-emerald-400">Bioinsumos</span> no Brasil
+          </h1>
+          <p className="text-slate-300 max-w-2xl text-lg font-light leading-relaxed">
+            Uma análise interativa sobre como a biodiversidade, a regulação e a logística estão redesenhando o mapa da indústria agropecuária nacional.
+          </p>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 md:px-6 -mt-16 relative z-20">
+        
+        {/* NAVEGAÇÃO SUPERIOR */}
+        <div className="bg-white p-2 rounded-2xl shadow-xl border border-slate-200 flex flex-wrap gap-2 mb-10">
+          {[
+            { id: 'evolution', label: '1. MERCADO & DADOS', icon: <TrendingUp size={18} /> },
+            { id: 'goias', label: '2. ESTRATÉGIA GOIÁS', icon: <Crosshair size={18} /> }, // Destaque
+            { id: 'regional', label: '3. GEOGRAFIA', icon: <MapPin size={18} /> },
+            { id: 'products', label: '4. PRODUTOS', icon: <Microscope size={18} /> },
+            { id: 'regulation', label: '5. REGULAÇÃO', icon: <ShieldCheck size={18} /> },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 min-w-[150px] flex items-center justify-center gap-2 px-3 py-4 rounded-xl font-bold transition-all text-xs md:text-sm ${
+                activeTab === tab.id 
+                  ? 'bg-slate-800 text-emerald-400 ring-2 ring-emerald-500 ring-offset-2 shadow-lg scale-[1.02]' 
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* --- CONTEÚDO DAS ABAS --- */}
+
+        {/* ABA 1: MERCADO & EVOLUÇÃO */}
+        {activeTab === 'evolution' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            <SectionIntro 
+              title="Por que este setor está explodindo?"
+              icon={TrendingUp}
+              text="O Brasil vive um 'boom' silencioso. Enquanto o mundo debate sustentabilidade, o Brasil implementa. O mercado de bioinsumos cresce 21% ao ano (4x a média global), impulsionado pela necessidade de substituir químicos caros e pela nova mentalidade do agricultor, que busca regeneração do solo."
+            />
+
+            {/* KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard label="Faturamento (Safra 23/24)" value="R$ 5 Bilhões" subtext="Crescimento anual de 15%" trend="Fonte: Croplife (2024)" />
+              <StatCard label="Unidades Produtoras" value="403" subtext="Fábricas mapeadas no estudo" trend="Fonte: Ipea (2025)" />
+              <StatCard label="Startups (Agtechs)" value="118" subtext="Focadas em inovação biológica" trend="Fonte: Radar Agtech" />
+              <StatCard label="Adoção no Campo" value="23%" subtext="Da área plantada total" trend="Líder Mundial" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Gráfico de Empresas */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-800 text-lg">Evolução de Empresas Registradas</h3>
+                  <InteractiveHint />
+                </div>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={evolucaoEmpresasData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="ano" axisLine={false} tickLine={false} />
+                      <YAxis axisLine={false} tickLine={false} />
+                      <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                      <Bar dataKey="empresas" fill="#059669" radius={[4, 4, 0, 0]} name="Empresas">
+                        <LabelList dataKey="empresas" position="top" fill="#047857" fontSize={12} fontWeight="bold" />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <ChartFooter source="Agrofit (MAPA)" period="1991 - Ago/2024" />
+                <DidacticNote 
+                  title="Análise do Gráfico" 
+                  text="Note o salto abrupto a partir de 2020. O Decreto 10.375 (Programa Nacional de Bioinsumos) funcionou como um catalisador legal, dando segurança para que empresas saíssem da informalidade e registrassem seus produtos."
+                />
+              </div>
+
+              {/* Gráfico de Startups */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-center mb-4">
+                   <h3 className="font-bold text-slate-800 text-lg">O Salto das Startups</h3>
+                   <InteractiveHint />
+                </div>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={evolucaoStartupsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="ano" axisLine={false} tickLine={false} />
+                      <YAxis axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{borderRadius: '8px'}} />
+                      <Line type="monotone" dataKey="startups" stroke="#0284c7" strokeWidth={3} activeDot={{ r: 8 }}>
+                         <LabelList dataKey="startups" position="top" fill="#0284c7" fontSize={12} fontWeight="bold" offset={10} />
+                      </Line>
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <ChartFooter source="Radar Agtech (Embrapa/SP Ventures)" period="2019 - 2023" />
+                <DidacticNote 
+                  title="Insight de Inovação" 
+                  text="As startups são o motor da inovação ágil. Enquanto grandes empresas focam em volume, essas 118 startups buscam microrganismos específicos para nichos que a grande indústria ignora."
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ABA 2: ESTRATÉGIA GOIÁS (DESTAQUE) */}
+        {activeTab === 'goias' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            <SectionIntro 
+              title="A Estratégia do Centro-Oeste: Oportunidade Única"
+              icon={Crosshair}
+              text="O estudo do Ipea (2025) revela um desequilíbrio crítico: o Centro-Oeste é o maior consumidor de bioinsumos do Brasil, mas ainda importa a maioria dos produtos de São Paulo. Goiás tem a oportunidade de ouro para reverter esse quadro usando três trunfos: Logística, Bioma e Infraestrutura Farmacêutica."
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* O Paradoxo Logístico */}
+              <div className="lg:col-span-5">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 h-full shadow-sm">
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2 text-lg">
+                     <Truck className="text-red-500"/> O "Paradoxo Logístico"
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-6">Comparativo entre Capacidade Produtiva vs. Demanda de Consumo.</p>
+                  
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={paradoxoLogisticoData} layout="vertical" margin={{left: 0, right: 40}}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false}/>
+                        <XAxis type="number" hide/>
+                        <YAxis dataKey="region" type="category" width={100} tick={{fontSize: 11, fontWeight: 'bold'}}/>
+                        <Tooltip cursor={{fill: 'transparent'}}/>
+                        <Bar dataKey="producao" name="Produção Industrial" fill="#94a3b8" radius={[0,4,4,0]} barSize={25}>
+                           <LabelList dataKey="labelProd" position="right" fontSize={11}/>
+                        </Bar>
+                        <Bar dataKey="consumo" name="Consumo Efetivo" fill="#dc2626" radius={[0,4,4,0]} barSize={25}>
+                           <LabelList dataKey="labelCons" position="right" fontSize={11} fontWeight="bold" fill="#dc2626"/>
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <DidacticNote 
+                    type="warning"
+                    title="Gargalo Identificado" 
+                    text="Há um 'GAP' logístico. Trazer organismos vivos (sensíveis ao calor) do Sudeste para o Centro-Oeste gera perdas de eficiência. A fábrica precisa estar ao lado da lavoura." 
+                  />
+                </div>
+              </div>
+
+              {/* Diferenciais Competitivos */}
+              <div className="lg:col-span-7 grid gap-4">
+                {diferenciaisGoias.map((dif) => (
+                  <div key={dif.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-5 hover:border-emerald-400 hover:shadow-md transition-all group">
+                    <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-emerald-50 transition-colors shrink-0">
+                      {dif.icon}
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-slate-800 text-lg group-hover:text-emerald-700 transition-colors">{dif.title}</h4>
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 px-2 py-1 rounded border border-emerald-100">
+                          {dif.impact}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        {dif.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Destaque Anápolis */}
+                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-6 rounded-2xl flex items-center gap-6 relative overflow-hidden shadow-lg mt-2">
+                  <Factory className="absolute -right-10 -bottom-10 text-white opacity-10 w-48 h-48" />
+                  <div className="relative z-10 w-full">
+                    <h4 className="font-bold text-xl mb-2 flex items-center gap-2">
+                      <Beaker size={20} className="text-blue-300"/> O "Leapfrogging" de Anápolis
+                    </h4>
+                    <p className="text-sm text-blue-100 leading-relaxed">
+                      O termo <em>Leapfrogging</em> (salto de rã) descreve pular etapas de desenvolvimento. Anápolis pode pular a etapa de "construção industrial" usando a capacidade ociosa do DAIA. Nenhuma outra região do Brasil tem essa densidade de infraestrutura estéril pronta para uso.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ABA 3: GEOGRAFIA (NACIONAL) */}
+        {activeTab === 'regional' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            <SectionIntro 
+              title="A Geografia da Desigualdade"
+              icon={Globe}
+              text="Onde estão as fábricas? O mapeamento do Ipea (2025) encontrou 403 unidades produtoras no país. A concentração no eixo Sul-Sudeste é massiva, criando bolsões de dependência tecnológica nas novas fronteiras agrícolas."
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Gráfico de Barras Vertical */}
+              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-800 text-lg">Ranking de Unidades Produtoras</h3>
+                  <InteractiveHint />
+                </div>
+                <div className="h-[450px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart layout="vertical" data={concentracaoRegionalData} margin={{ top: 5, right: 50, left: 40, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="estado" type="category" width={100} tick={{fontSize: 11}} />
+                      <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '8px'}} />
+                      <Bar dataKey="unidades" fill="#0f766e" radius={[0, 4, 4, 0]} barSize={30}>
+                        <LabelList dataKey="unidades" position="right" fill="#0f172a" fontSize={12} fontWeight="bold" formatter={(val) => `${val} un.`} />
+                        <LabelList dataKey="percent" position="insideRight" fill="#fff" fontSize={10} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <ChartFooter source="Levantamento Ipea (Google, LinkedIn, Agrofit, Sipeagro)" period="Ago/2024" />
+              </div>
+
+              {/* Análise de Biomas Interativa */}
+              <div className="lg:col-span-6 space-y-4">
+                <h3 className="font-bold text-slate-800 text-lg mb-2">Análise por Bioma</h3>
+                <div className="grid gap-4">
+                  {biomasData.map((biome) => (
+                    <button
+                      key={biome.id}
+                      onClick={() => setActiveBiome(biome)}
+                      className={`w-full text-left p-5 rounded-xl border transition-all duration-300 ${
+                        activeBiome.id === biome.id
+                          ? 'bg-white border-emerald-500 shadow-md ring-1 ring-emerald-500 transform scale-[1.02]'
+                          : 'bg-slate-50 border-transparent hover:bg-white hover:border-slate-200'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${activeBiome.id === biome.id ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-slate-400'}`}>
+                            {biome.icon}
+                          </div>
+                          <div>
+                            <h4 className={`font-bold text-sm ${activeBiome.id === biome.id ? 'text-slate-900' : 'text-slate-600'}`}>{biome.name}</h4>
+                            <span className="text-xs text-slate-500">{biome.title}</span>
+                          </div>
+                        </div>
+                        {activeBiome.id === biome.id && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Selecionado</span>}
+                      </div>
+                      
+                      {activeBiome.id === biome.id && (
+                        <div className="animate-in fade-in duration-300">
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                              <span className="block text-[10px] uppercase text-slate-400 font-bold">Participação</span>
+                              <span className="font-bold text-slate-800 text-lg">{biome.stats.production}</span>
+                            </div>
+                            <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                              <span className="block text-[10px] uppercase text-slate-400 font-bold">Status</span>
+                              <span className="font-bold text-slate-800 text-lg">{biome.stats.potential}</span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-600 mb-4 leading-relaxed">{biome.description}</p>
+                          <div className="bg-blue-50 text-blue-900 p-3 rounded-lg text-xs border border-blue-100 leading-relaxed">
+                            <strong>Análise:</strong> {biome.analysis}
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ABA 4: PRODUTOS */}
+        {activeTab === 'products' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            <SectionIntro 
+              title="Tipologia: O que estamos produzindo?"
+              icon={Microscope}
+              text="Ao contrário da Europa, onde o foco são bioestimulantes, no Brasil a guerra é contra as pragas tropicais. Por isso, 43% dos nossos produtos biológicos são inseticidas, usados principalmente para combater lagartas na soja e no milho."
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Gráfico de Pizza */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 className="font-bold text-slate-800 mb-6 text-lg">Market Share por Classe (Agrofit)</h3>
+                <div className="h-80 w-full flex justify-center relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie 
+                        data={tiposProdutosData} 
+                        cx="50%" 
+                        cy="50%" 
+                        innerRadius={80} 
+                        outerRadius={120} 
+                        paddingAngle={2} 
+                        dataKey="value"
+                        labelLine={false}
+                      >
+                        {tiposProdutosData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [`${value} Produtos`, 'Quantidade']} contentStyle={{borderRadius: '8px'}} />
+                      <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{fontSize: '12px'}} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Central Label */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none pr-24">
+                     <span className="text-3xl font-bold text-slate-800 block">727</span>
+                     <span className="text-xs text-slate-400 uppercase font-bold">Total Produtos</span>
+                  </div>
+                </div>
+                <ChartFooter source="Agrofit (MAPA)" period="Ago/2024" />
+              </div>
+              
+              {/* Explicação das Categorias */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-slate-800 text-lg">Categorias em Destaque</h3>
+                
+                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-emerald-400 transition-colors shadow-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-emerald-600"></div>
+                    <strong className="text-emerald-900 text-lg">Inseticidas (43%)</strong>
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    Líder absoluto. Baseados principalmente em bactérias (<em>Bacillus thuringiensis</em>) e fungos (<em>Beauveria bassiana</em>). Substituem químicos pesados no controle de lagartas desfolhadoras.
+                  </p>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-emerald-400 transition-colors shadow-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                    <strong className="text-emerald-900 text-lg">Fungicidas (16%)</strong>
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    Segunda maior classe. Destaque para o uso de <em>Trichoderma</em>, que atua protegendo as raízes contra doenças de solo que causam apodrecimento.
+                  </p>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-emerald-400 transition-colors shadow-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-3 h-3 rounded-full bg-emerald-300"></div>
+                    <strong className="text-emerald-900 text-lg">Nematicidas (12%)</strong>
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    A categoria de crescimento mais rápido. Nematoides são vermes microscópicos que atacam raízes (causando bilhões em prejuízos) e os químicos para combatê-los são extremamente tóxicos, favorecendo a transição para biológicos.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ABA 5: REGULAÇÃO */}
+        {activeTab === 'regulation' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            <SectionIntro 
+              title="O Novo Marco Legal (Lei 15.070)"
+              icon={ShieldCheck}
+              text="Em dezembro de 2024, o Brasil sancionou a Lei nº 15.070, o marco legal definitivo dos bioinsumos. Ela resolve um limbo jurídico histórico, separando de vez os produtos biológicos dos agrotóxicos químicos e criando regras claras para a produção 'On Farm' (dentro da fazenda)."
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 className="font-bold text-slate-800 mb-6 text-lg">Linha do Tempo da Regulação</h3>
+                <div className="space-y-8 relative pl-4 border-l-2 border-slate-100">
+                  <div className="relative group">
+                    <div className="absolute -left-[21px] top-1 w-4 h-4 bg-slate-300 rounded-full border-4 border-white group-hover:bg-emerald-500 transition-colors"></div>
+                    <h4 className="font-bold text-base text-slate-700">2020: Decreto 10.375 (PNB)</h4>
+                    <p className="text-sm text-slate-500 mt-1 leading-relaxed">Criação do Programa Nacional de Bioinsumos. Foi o sinal verde para o mercado investir.</p>
+                  </div>
+                  <div className="relative group">
+                    <div className="absolute -left-[21px] top-1 w-4 h-4 bg-slate-300 rounded-full border-4 border-white group-hover:bg-emerald-500 transition-colors"></div>
+                    <h4 className="font-bold text-base text-slate-700">2021: Decreto 10.833</h4>
+                    <p className="text-sm text-slate-500 mt-1 leading-relaxed">Primeira tentativa de desburocratização, permitindo isenção de registro para uso próprio.</p>
+                  </div>
+                  <div className="relative group">
+                    <div className="absolute -left-[23px] top-0 w-5 h-5 bg-blue-600 rounded-full border-4 border-white ring-2 ring-blue-100 shadow-lg"></div>
+                    <h4 className="font-bold text-base text-blue-900">2024: Lei nº 15.070 (O Marco)</h4>
+                    <p className="text-sm text-slate-600 mt-1 leading-relaxed font-medium">Sanção presidencial. Define taxas, fiscalização e, crucialmente, legitima a produção On Farm com responsável técnico.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                   <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2 text-lg">
+                     <Cpu size={20} className="text-emerald-500"/> O Fenômeno "On Farm"
+                   </h3>
+                   <div className="flex justify-between items-center mb-2">
+                     <span className="text-sm text-slate-600 font-medium">Participação Estimada (Biocontrole):</span>
+                     <span className="text-2xl font-bold text-emerald-600">22%</span>
+                   </div>
+                   <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-4">
+                     <div className="w-[22%] bg-emerald-500 h-full rounded-full"></div>
+                   </div>
+                   <div className="bg-slate-50 p-4 rounded-xl text-xs text-slate-600 border border-slate-100 leading-relaxed">
+                     <strong>Fonte:</strong> IHS Markit (2021) citado no Ipea (2025).<br/><br/>
+                     A prática de multiplicar bactérias na própria fazenda cresce pela redução de custos (autonomia). O desafio agora é garantir a <strong>pureza genética</strong> desses inóculos para evitar contaminação.
+                   </div>
+                </div>
+
+                <div className="bg-emerald-900 text-white p-6 rounded-2xl shadow-lg">
+                  <h3 className="font-bold mb-3 flex items-center gap-2 text-lg"><Lightbulb size={20} className="text-yellow-400"/> Conclusão Final</h3>
+                  <p className="text-sm text-emerald-100 leading-relaxed text-justify">
+                    "O Brasil já tem a tecnologia e a biodiversidade. O gargalo para liderar o mercado global em 2035 não é científico, é <strong>logístico e industrial</strong>. A região que conseguir produzir em escala perto das grandes lavouras (Centro-Oeste) vencerá a corrida."
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      <footer className="max-w-6xl mx-auto px-6 mt-16 text-center border-t border-slate-200 pt-10 pb-12">
+        <p className="text-slate-600 text-sm font-bold mb-2">
+          Elaborado por: Antonio Balduino Neto - Especialista em Foresight Estratégico e Design de Futuros
+        </p>
+        <p className="text-slate-400 text-xs">
+          Baseado no estudo: POLICARPO, M. A. et al. <em>Desafios e oportunidades para o avanço da produção de bioinsumos no Brasil</em>. Texto para Discussão 3133. Brasília: Ipea, 2025.
+        </p>
+      </footer>
+    </div>
+  );
+}
